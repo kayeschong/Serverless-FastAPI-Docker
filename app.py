@@ -1,5 +1,5 @@
 # coding: utf8
-from fastapi import FastAPI, Body
+from fastapi import FastAPI, Body, Query
 from pydantic import BaseModel
 import spacy
 from spacy.matcher import Matcher
@@ -10,7 +10,14 @@ app = FastAPI(
     description="Using FastAPI to reproduce matcher backend from <https://explosion.ai/demos/matcher>, based on <https://github.com/explosion/spacy-services>."
 )
 
-MODELS = {"en_core_web_sm": spacy.load("en_core_web_sm")}
+INSTALLED_MODELS = [
+    "en_core_web_sm",
+]
+
+MODELS = {
+    model_name: spacy.load(model_name)
+        for model_name in INSTALLED_MODELS
+}
 
 
 class MatchData(BaseModel):
@@ -37,7 +44,7 @@ def models():
 
 @app.post("/match")
 def match(
-    model: str = "en_core_web_sm", 
+    model: str = Query(..., enum=INSTALLED_MODELS), 
     data: MatchData = Body(
         ...,  # required param
         example={
