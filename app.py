@@ -5,8 +5,10 @@ import spacy
 from spacy.matcher import Matcher
 from typing import List, Dict
 
-
-app = FastAPI()
+app = FastAPI(
+    title="Matcher Service",
+    description="Using FastAPI to reproduce matcher backend from <https://explosion.ai/demos/matcher>, based on <https://github.com/explosion/spacy-services>."
+)
 
 MODELS = {"en_core_web_sm": spacy.load("en_core_web_sm")}
 
@@ -29,6 +31,7 @@ def get_model_desc(nlp, model_name):
 
 @app.get("/models")
 def models():
+    """Get human-readable model name, language name and version."""
     return {name: get_model_desc(nlp, name) for name, nlp in MODELS.items()}
 
 
@@ -47,6 +50,7 @@ def match(
         }
     ),
 ):
+    """Match text tokens based on input pattern"""
     nlp = MODELS[model]
 
     matcher = Matcher(nlp.vocab)
