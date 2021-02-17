@@ -26,7 +26,7 @@ def match(text: str, model: str, pattern: list):
     nlp = MODELS[model]
     if pattern:
         matcher = Matcher(nlp.vocab)
-        matcher.add("PATTERN", None, pattern)
+        matcher.add("PATTERN", pattern) # pattern API changed for v3
     doc = nlp(text)
     tokens = []
     matches = []
