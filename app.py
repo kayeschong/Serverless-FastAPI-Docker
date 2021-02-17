@@ -1,11 +1,9 @@
 # coding: utf8
-from __future__ import unicode_literals
-
-import hug
-from hug_middleware_cors import CORSMiddleware
+from fastapi import FastAPI
 import spacy
 from spacy.matcher import Matcher
 
+app = FastAPI()
 
 MODELS = {"en_core_web_sm": spacy.load("en_core_web_sm")}
 
@@ -18,12 +16,12 @@ def get_model_desc(nlp, model_name):
     return "{} - {} (v{})".format(lang_name, model_name, model_version)
 
 
-@hug.get("/models")
+@app.get("/models")
 def models():
     return {name: get_model_desc(nlp, name) for name, nlp in MODELS.items()}
 
 
-@hug.post("/match")
+@app.post("/match")
 def match(text: str, model: str, pattern: list):
     nlp = MODELS[model]
     if pattern:
@@ -50,11 +48,3 @@ def match(text: str, model: str, pattern: list):
         label = "MATCH" if t.i in match_tokens else "TOKEN"
         tokens.append({"start": start, "end": end, "label": label})
     return {"matches": matches, "tokens": tokens}
-
-
-if __name__ == "__main__":
-    import waitress
-
-    app = hug.API(__name__)
-    app.http.add_middleware(CORSMiddleware(app))
-    waitress.serve(__hug_wsgi__, port=8080)
