@@ -1,20 +1,21 @@
 # coding: utf8
 from fastapi import FastAPI, Body, Query
 from pydantic import BaseModel
-import spacy
-from spacy.matcher import Matcher
-from typing import List, Dict
+import spacy  # type: ignore
+from spacy.matcher import Matcher  # type: ignore
+from typing import List, Dict, Tuple, Any
+from mangum import Mangum
 
 app = FastAPI(
     title="Matcher Service",
     description="Using FastAPI to reproduce matcher backend from <https://explosion.ai/demos/matcher>, based on <https://github.com/explosion/spacy-services>."
 )
 
-INSTALLED_MODELS = [
+INSTALLED_MODELS: Tuple[str] = (
     "en_core_web_sm",
-]
+)
 
-MODELS = {
+MODELS: Dict[str, Any] = {
     model_name: spacy.load(model_name)
         for model_name in INSTALLED_MODELS
 }
@@ -28,7 +29,7 @@ class MatchData(BaseModel):
     ]
 
 
-def get_model_desc(nlp, model_name):
+def get_model_desc(nlp: Any, model_name: str) -> str:
     """Get human-readable model name, language name and version."""
     lang_cls = spacy.util.get_lang_class(nlp.lang)
     lang_name = lang_cls.__name__
@@ -37,7 +38,7 @@ def get_model_desc(nlp, model_name):
 
 
 @app.get("/models")
-def models():
+def models() -> Dict[str, str]:
     """Get human-readable model name, language name and version."""
     return {name: get_model_desc(nlp, name) for name, nlp in MODELS.items()}
 
@@ -56,16 +57,16 @@ def match(
             ]
         }
     ),
-):
+) -> Dict[str, List[dict]]:
     """Match text tokens based on input pattern"""
     nlp = MODELS[model]
 
     matcher = Matcher(nlp.vocab)
-    matcher.add("PATTERN", data.pattern) # pattern args changed for v3
+    matcher.add("PATTERN", data.pattern)  # pattern args changed for v3
     
     doc = nlp(data.text)
-    tokens = []
-    matches = []
+    tokens: List[dict] = []
+    matches: List[dict] = []
     match_tokens = set()
 
     for _, start, end in matcher(doc):
@@ -86,3 +87,7 @@ def match(
         tokens.append({"start": start, "end": end, "label": label})
     
     return {"matches": matches, "tokens": tokens}
+
+
+# Creates asgi handler for AWS Lambda
+handler = Mangum(app)
