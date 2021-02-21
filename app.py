@@ -6,10 +6,16 @@ import spacy  # type: ignore
 from spacy.matcher import Matcher  # type: ignore
 from typing import List, Dict, Tuple, Any
 from mangum import Mangum
+import os
+
+ROOT_PATH = os.environ.get('ROOT_PATH', '')
+
+print(ROOT_PATH)
 
 app = FastAPI(
     title="Matcher Service",
-    description="Using FastAPI to reproduce matcher backend from <https://explosion.ai/demos/matcher>, based on <https://github.com/explosion/spacy-services>."
+    description="Using FastAPI to reproduce matcher backend from <https://explosion.ai/demos/matcher>, based on <https://github.com/explosion/spacy-services>.",
+    root_path=ROOT_PATH,
 )
 
 origins = [
