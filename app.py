@@ -1,5 +1,6 @@
 # coding: utf8
 from fastapi import FastAPI, Body, Query
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import spacy  # type: ignore
 from spacy.matcher import Matcher  # type: ignore
@@ -11,13 +12,26 @@ app = FastAPI(
     description="Using FastAPI to reproduce matcher backend from <https://explosion.ai/demos/matcher>, based on <https://github.com/explosion/spacy-services>."
 )
 
+origins = [
+    "http://localhost",
+    "http://localhost:8080",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 INSTALLED_MODELS: Tuple[str] = (
     "en_core_web_sm",
 )
 
 MODELS: Dict[str, Any] = {
     model_name: spacy.load(model_name)
-        for model_name in INSTALLED_MODELS
+    for model_name in INSTALLED_MODELS
 }
 
 
@@ -25,7 +39,9 @@ class MatchData(BaseModel):
     text: str
     # Pattern format changed for spacy v3
     pattern: List[
-        List[Dict[str, str]]
+        List[
+            Dict[str, str]
+        ]
     ]
 
 
@@ -45,7 +61,7 @@ def models() -> Dict[str, str]:
 
 @app.post("/match")
 def match(
-    model: str = Query(..., enum=INSTALLED_MODELS), 
+    model: str = Query(..., enum=INSTALLED_MODELS),
     data: MatchData = Body(
         ...,  # required param
         example={
@@ -63,7 +79,7 @@ def match(
 
     matcher = Matcher(nlp.vocab)
     matcher.add("PATTERN", data.pattern)  # pattern args changed for v3
-    
+
     doc = nlp(data.text)
     tokens: List[dict] = []
     matches: List[dict] = []
@@ -85,7 +101,7 @@ def match(
         end = t.idx + len(t.text)
         label = "MATCH" if t.i in match_tokens else "TOKEN"
         tokens.append({"start": start, "end": end, "label": label})
-    
+
     return {"matches": matches, "tokens": tokens}
 
 
