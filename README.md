@@ -46,15 +46,6 @@ aws ecr get-login-password | docker login --username AWS --password-stdin ${AWS_
 aws ecr create-repository --repository-name mini-projects-repo --image-tag-mutability IMMUTABLE --image-scanning-configuration scanOnPush=true
 
 sam deploy --guided
-
-171432696242.dkr.ecr.ap-southeast-1.amazonaws.com/mini-projects-repo
-
-sam package --output-template-file packaged-template.yaml --image-repository ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${PROJECT_NAME}
-
-sam deploy --template-file packaged-template.yaml --stack-name fastapi-example --capabilities CAPABILITY_IAM --region ${AWS_REGION}
-
-docker build -t ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${PROJECT_NAME}:latest
-
 ```
 
 ## Deploy to GCP Cloud Run
