@@ -4,13 +4,21 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import spacy  # type: ignore
 from spacy.matcher import Matcher  # type: ignore
-from typing import List, Dict, Tuple, Any
+from spacy.language import Language  # type: ignore
+from typing import List, Dict, Tuple
 from mangum import Mangum
 import os
 
 ROOT_PATH = os.environ.get('ROOT_PATH', '')
 
-print(ROOT_PATH)
+INSTALLED_MODELS: Tuple[str] = (
+    "en_core_web_sm",
+)
+
+MODELS: Dict[str, Language] = {
+    model_name: spacy.load(model_name)
+    for model_name in INSTALLED_MODELS
+}
 
 app = FastAPI(
     title="Matcher Service",
@@ -31,15 +39,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-INSTALLED_MODELS: Tuple[str] = (
-    "en_core_web_sm",
-)
-
-MODELS: Dict[str, Any] = {
-    model_name: spacy.load(model_name)
-    for model_name in INSTALLED_MODELS
-}
-
 
 class MatchData(BaseModel):
     text: str
@@ -51,7 +50,7 @@ class MatchData(BaseModel):
     ]
 
 
-def get_model_desc(nlp: Any, model_name: str) -> str:
+def get_model_desc(nlp: Language, model_name: str) -> str:
     """Get human-readable model name, language name and version."""
     lang_cls = spacy.util.get_lang_class(nlp.lang)
     lang_name = lang_cls.__name__
