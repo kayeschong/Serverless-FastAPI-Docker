@@ -11,7 +11,7 @@ AWS added [Container Support for AWS Lambda](https://aws.amazon.com/blogs/aws/ne
 ## Running locally
 
 ```bash
-docker build -t matcher-service .
+docker build -t matcher-service-dev .
 
 docker run -d --name matcher-service --rm -p 8000:80 matcher-service
 ```
@@ -21,7 +21,7 @@ Go to http://localhost:8000/docs for docs
 
 ## Deploy to AWS Lambda
 
-1. Create an [IAM user](https://console.aws.amazon.com/iam/home#/users) with access to Lambda and ECR.
+1. Create an [IAM user](https://console.aws.amazon.com/iam/home#/users) with access to Lambda, ECR, S3 and API gateway.
 
 2. Install [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2.html) and [AWS SAM CLI](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install.html) for your respective OS. Then, [configure](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-configure.html) with your credentials. 
 
@@ -36,17 +36,38 @@ Go to http://localhost:8000/docs for docs
     aws configure set output $AWS_OUTPUT
     ```
 
-3. ~In Progress~ Using SAM CLI to deploy to AWS Lambda (TODO: Link with github actions)
-```bash
-sam build --template-file template-prod.yml
-sam validate --template-file .aws-sam/build/template.yaml
+3. Using SAM CLI to deploy to AWS Lambda
 
-aws ecr get-login-password | docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
+    First time setup
+    ```bash
+    # Login to ECR with credentials
+    aws ecr get-login-password | docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
 
-aws ecr create-repository --repository-name mini-projects-repo --image-tag-mutability IMMUTABLE --image-scanning-configuration scanOnPush=true
+    # Create container repository if not already available
+    aws ecr create-repository --repository-name mini-projects-repo --image-tag-mutability IMMUTABLE --image-scanning-configuration scanOnPush=true
 
-sam deploy --guided
-```
+    sam build --template-file template-prod.yml
+    sam validate --template-file .aws-sam/build/template.yaml
+    
+    sam package --output-template-file packaged.yaml --image-repositories MatcherFunction=${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/mini-projects-repo
+
+    sam deploy --template-file packaged.yaml --stack-name matcher-service --capabilities CAPABILITY_IAM --image-repositories MatcherFunction=${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/mini-projects-repo --region ${AWS_REGION} --no-confirm-changeset
+    ```
+
+    Subsequent deploys
+    ```bash
+    # Set environment variables/credentials
+
+    sam build --template-file template-prod.yml
+
+    sam validate --template-file .aws-sam/build/template.yaml
+    
+    sam package --output-template-file packaged.yaml --image-repositories MatcherFunction=${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/mini-projects-repo
+
+    sam deploy --template-file packaged.yaml --stack-name matcher-service --capabilities CAPABILITY_IAM --image-repositories MatcherFunction=${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/mini-projects-repo --region ${AWS_REGION} --no-confirm-changeset
+    ```
+
+4.  CI/CD with github actions
 
 ## Deploy to GCP Cloud Run
 ~In Progress~
